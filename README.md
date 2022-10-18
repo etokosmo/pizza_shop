@@ -110,7 +110,7 @@ sudo systemctl start pizza_shop.service
 ```
 * You can check status service
 ```bash
-sudo systemctl enable pizza_shop.service 
+sudo systemctl status pizza_shop.service 
 ```
 * You can check logs
 ```bash
