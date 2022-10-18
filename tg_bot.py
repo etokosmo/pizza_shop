@@ -311,11 +311,11 @@ def handle_delivery(update: Update, context: CallbackContext):
         context.user_data['total_price'] = total_price
         message = create_cart_message(products, total_price)
 
-        # context.bot.send_message(text=message,
-        #                          chat_id=deliveryman_tg)
-        # context.bot.send_location(chat_id=deliveryman_tg,
-        #                           latitude=user_lat,
-        #                           longitude=user_lon)
+        context.bot.send_message(text=message,
+                                 chat_id=deliveryman_tg)
+        context.bot.send_location(chat_id=deliveryman_tg,
+                                  latitude=user_lat,
+                                  longitude=user_lon)
         context.bot.send_message(text=f"Оплатите ваш заказ",
                                  chat_id=query.message.chat_id)
 
