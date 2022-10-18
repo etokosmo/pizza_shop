@@ -72,12 +72,17 @@ If you want parse data you need this variables:
 python3 tg_bot.py
 ```
 
+- To parse data, run the script with the command:
+```bash
+python3 parse_tools.py
+```
+
 ## Deploy
 
-* Create `pizza_bot.service` in `/etc/systemd/system/`. Use `nano` or `vim`.
+* Create `pizza_shop.service` in `/etc/systemd/system/`. Use `nano` or `vim`.
 
 <details>
-  <summary>pizza_bot.service</summary>
+  <summary>pizza_shop.service</summary>
 
 ```
 [Unit]
@@ -100,16 +105,16 @@ WantedBy=multi-user.target
 
 * Start bot with continuous work
 ```bash
-sudo systemctl enable pizza_bot.service 
-sudo systemctl start pizza_bot.service
+sudo systemctl enable pizza_shop.service 
+sudo systemctl start pizza_shop.service
 ```
 * You can check status service
 ```bash
-sudo systemctl enable pizza_bot.service 
+sudo systemctl enable pizza_shop.service 
 ```
 * You can check logs
 ```bash
-sudo journalctl -u  pizza_bot.service 
+sudo journalctl -u  pizza_shop.service 
 ```
 
 > The code is written for educational purposes - this is a lesson in the course on Python and web development on the site [Devman](https://dvmn.org).
