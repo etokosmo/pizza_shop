@@ -45,15 +45,6 @@ class PizzaAddress:
     id: str = None
 
 
-# @dataclass()
-# class Product:
-#     id: str
-#     name: str
-#     description: str = None
-#     amount: int = None
-#     price: str = None
-
-
 def is_valid_token(token_expires_timestamp: int) -> bool:
     """Return whether token has expired"""
     now_datetime = datetime.now()
