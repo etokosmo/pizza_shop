@@ -14,7 +14,7 @@ from geo_tools import fetch_coordinates, get_min_dist
 from moltin_tools import get_all_products, get_product_by_id, \
     get_product_image_by_id, add_product_in_cart, get_cart_items, \
     remove_product_from_cart, create_customer, get_all_address_entries, \
-    create_customer_address
+    create_customer_address, MoltinClient
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,8 @@ def send_notification(context):
     context.bot.send_message(chat_id=context.job.context, text=text)
 
 
-def create_menu_buttons():
-    products = get_all_products(motlin_client_id, motlin_client_secret)
+def create_menu_buttons(moltin_client: MoltinClient):
+    products = get_all_products(moltin_client)
     keyboard = [
         [InlineKeyboardButton(product.name, callback_data=product.id)]
         for product in products]
@@ -66,19 +66,20 @@ def create_buttons(choice: int = 0):
     return reply_markup
 
 
-def start(update: Update, context: CallbackContext, payment_token):
-    reply_markup = create_menu_buttons()
+def start(update: Update, context: CallbackContext, payment_token: str,
+          moltin_client: MoltinClient):
+    reply_markup = create_menu_buttons(moltin_client)
 
     update.message.reply_text('Please choose:', reply_markup=reply_markup)
     return "HANDLE_MENU"
 
 
-def handle_menu(update: Update, context: CallbackContext, payment_token):
+def handle_menu(update: Update, context: CallbackContext, payment_token: str,
+                moltin_client: MoltinClient):
     query = update.callback_query
     if query.data == 'cart':
         products, total_price = get_cart_items(update.effective_user.id,
-                                               motlin_client_id,
-                                               motlin_client_secret)
+                                               moltin_client)
         context.user_data['total_price'] = total_price
         message = create_cart_message(products, total_price)
         reply_markup = create_card_buttons(products)
@@ -86,8 +87,7 @@ def handle_menu(update: Update, context: CallbackContext, payment_token):
                                  reply_markup=reply_markup,
                                  chat_id=query.message.chat_id)
         return "HANDLE_CART"
-    product = get_product_by_id(query.data, motlin_client_id,
-                                motlin_client_secret)
+    product = get_product_by_id(query.data, moltin_client)
     keyboard = [
         [InlineKeyboardButton("Добавить в корзину",
                               callback_data=f"1,{product.id}"), ],
@@ -98,8 +98,7 @@ def handle_menu(update: Update, context: CallbackContext, payment_token):
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_photo(
         chat_id=query.message.chat_id,
-        photo=get_product_image_by_id(product.image_url, motlin_client_id,
-                                      motlin_client_secret),
+        photo=get_product_image_by_id(product.image_url, moltin_client),
         caption=create_product_description(product),
         reply_markup=reply_markup
     )
@@ -108,10 +107,11 @@ def handle_menu(update: Update, context: CallbackContext, payment_token):
     return "HANDLE_DESCRIPTION"
 
 
-def handle_cart(update: Update, context: CallbackContext, payment_token):
+def handle_cart(update: Update, context: CallbackContext, payment_token: str,
+                moltin_client: MoltinClient):
     query = update.callback_query
     if query.data == 'menu':
-        reply_markup = create_menu_buttons()
+        reply_markup = create_menu_buttons(moltin_client)
 
         context.bot.send_message(text='Please choose:',
                                  reply_markup=reply_markup,
@@ -130,10 +130,9 @@ def handle_cart(update: Update, context: CallbackContext, payment_token):
         return "HANDLE_WAITING_ADDRESS"
     else:
         remove_product_from_cart(query.data, update.effective_user.id,
-                                 motlin_client_id, motlin_client_secret)
+                                 moltin_client)
         products, total_price = get_cart_items(update.effective_user.id,
-                                               motlin_client_id,
-                                               motlin_client_secret)
+                                               moltin_client)
         context.user_data['total_price'] = total_price
         message = create_cart_message(products, total_price)
         reply_markup = create_card_buttons(products)
@@ -143,7 +142,8 @@ def handle_cart(update: Update, context: CallbackContext, payment_token):
         return "HANDLE_CART"
 
 
-def handle_description(update: Update, context: CallbackContext, payment_token):
+def handle_description(update: Update, context: CallbackContext,
+                       payment_token: str, moltin_client: MoltinClient):
     query = update.callback_query
     try:
         command, product_id = query.data.split(",")
@@ -152,7 +152,7 @@ def handle_description(update: Update, context: CallbackContext, payment_token):
         product_id = None
 
     if command == 'back':
-        reply_markup = create_menu_buttons()
+        reply_markup = create_menu_buttons(moltin_client)
 
         context.bot.send_message(text='Please choose:',
                                  reply_markup=reply_markup,
@@ -163,8 +163,7 @@ def handle_description(update: Update, context: CallbackContext, payment_token):
 
     if command == 'cart':
         products, total_price = get_cart_items(update.effective_user.id,
-                                               motlin_client_id,
-                                               motlin_client_secret)
+                                               moltin_client)
         context.user_data['total_price'] = total_price
         message = create_cart_message(products, total_price)
         reply_markup = create_card_buttons(products)
@@ -176,36 +175,38 @@ def handle_description(update: Update, context: CallbackContext, payment_token):
     if command == '1':
         update.callback_query.answer("Товар добавлен в корзину")
         add_product_in_cart(product_id, 1, update.effective_user.id,
-                            motlin_client_id, motlin_client_secret)
+                            moltin_client)
         return "HANDLE_DESCRIPTION"
     if command == '3':
         update.callback_query.answer("Товар добавлен в корзину")
         add_product_in_cart(product_id, 3, update.effective_user.id,
-                            motlin_client_id, motlin_client_secret)
+                            moltin_client)
         return "HANDLE_DESCRIPTION"
     if command == '5':
         update.callback_query.answer("Товар добавлен в корзину")
         add_product_in_cart(product_id, 5, update.effective_user.id,
-                            motlin_client_id, motlin_client_secret)
+                            moltin_client)
         return "HANDLE_DESCRIPTION"
     return "HANDLE_MENU"
 
 
-def handle_waiting_email(update: Update, context: CallbackContext, payment_token):
+def handle_waiting_email(update: Update, context: CallbackContext,
+                         payment_token: str, moltin_client: MoltinClient):
     user = update.effective_user
     name = f"{user.first_name}_tgid-{user.id}"
     email = update.message.text
-    create_customer(name, email, motlin_client_id, motlin_client_secret)
+    create_customer(name, email, moltin_client)
     context.bot.send_message(
         text=f'Вы прислали мне эту почту: {email}',
         chat_id=update.message.chat_id)
 
 
-def handle_waiting_address(update: Update, context: CallbackContext, payment_token):
+def handle_waiting_address(update: Update, context: CallbackContext,
+                           payment_token: str, moltin_client: MoltinClient):
     query = update.callback_query
     if query:
         if query.data == 'menu':
-            reply_markup = create_menu_buttons()
+            reply_markup = create_menu_buttons(moltin_client)
 
             context.bot.send_message(text='Please choose:',
                                      reply_markup=reply_markup,
@@ -235,8 +236,7 @@ def handle_waiting_address(update: Update, context: CallbackContext, payment_tok
                 chat_id=update.message.chat_id)
             return "HANDLE_WAITING_ADDRESS"
 
-    addresses = get_all_address_entries('adres', motlin_client_id,
-                                        motlin_client_secret)
+    addresses = get_all_address_entries('adres', moltin_client)
     nearest_address, dist_to_nearest_address = get_min_dist(addresses,
                                                             current_pos)
 
@@ -276,10 +276,11 @@ def handle_waiting_address(update: Update, context: CallbackContext, payment_tok
     return "HANDLE_WAITING_DELIVERY"
 
 
-def handle_delivery(update: Update, context: CallbackContext, payment_token):
+def handle_delivery(update: Update, context: CallbackContext,
+                    payment_token: str, moltin_client: MoltinClient):
     query = update.callback_query
     if query.data == 'menu':
-        reply_markup = create_menu_buttons()
+        reply_markup = create_menu_buttons(moltin_client)
 
         context.bot.send_message(text='Please choose:',
                                  reply_markup=reply_markup,
@@ -302,12 +303,10 @@ def handle_delivery(update: Update, context: CallbackContext, payment_token):
             lat=user_lat,
             lon=user_lon,
             flow_slug='customer-address',
-            motlin_client_id=motlin_client_id,
-            motlin_client_secret=motlin_client_secret
+            moltin_client=moltin_client,
         )
         products, total_price = get_cart_items(update.effective_user.id,
-                                               motlin_client_id,
-                                               motlin_client_secret)
+                                               moltin_client)
         context.user_data['total_price'] = total_price
         message = create_cart_message(products, total_price)
 
@@ -362,7 +361,9 @@ def successful_payment_callback(update, context):
                                context=update.effective_user.id)
 
 
-def handle_users_reply(update: Update, context: CallbackContext, redis_db, payment_token):
+def handle_users_reply(update: Update, context: CallbackContext,
+                       redis_db: redis.client.Redis,
+                       payment_token: str, moltin_client: MoltinClient):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -387,7 +388,8 @@ def handle_users_reply(update: Update, context: CallbackContext, redis_db, payme
     }
     state_handler = states_functions[user_state]
     try:
-        next_state = state_handler(update, context, payment_token)
+        next_state = state_handler(update, context, payment_token,
+                                   moltin_client)
         redis_db.set(str(chat_id), next_state)
     except Exception as err:
         logging.error(err)
@@ -413,8 +415,10 @@ if __name__ == '__main__':
         port=env("DATABASE_PORT"),
         password=env("DATABASE_PASSWORD")
     )
-    motlin_client_id = env("MOTLIN_CLIENT_ID")
-    motlin_client_secret = env("MOTLIN_CLIENT_SECRET")
+    moltin_client = MoltinClient(
+        client_id=env("MOTLIN_CLIENT_ID"),
+        client_secret=env("MOTLIN_CLIENT_SECRET")
+    )
     yandex_geo_api_token = env("YANDEX_GEO_API_TOKEN")
     tg_merchant_token = env.str("TG_MERCHANT_TOKEN")
 
@@ -430,7 +434,8 @@ if __name__ == '__main__':
     handle_users_reply_with_args = partial(
         handle_users_reply,
         redis_db=redis_database,
-        payment_token=tg_merchant_token
+        payment_token=tg_merchant_token,
+        moltin_client=moltin_client
     )
     dispatcher.add_handler(
         CommandHandler('start', handle_users_reply_with_args))

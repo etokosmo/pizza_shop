@@ -8,6 +8,11 @@ from slugify import slugify
 motlin_token, token_expires_timestamp = None, None
 
 
+class MoltinClient(NamedTuple):
+    client_id: str
+    client_secret: str
+
+
 class MoltinFlow(NamedTuple):
     id: str
     slug: int
@@ -56,22 +61,20 @@ def is_valid_token(token_expires_timestamp: int) -> bool:
     return now_datetime < token_expires_datetime
 
 
-def get_motlin_access_token(motlin_client_id: str,
-                            motlin_client_secret: str) -> str:
+def get_motlin_access_token(moltin_client: MoltinClient) -> str:
     """Return motlin access token"""
     global motlin_token, token_expires_timestamp
     if (motlin_token is None) or (not is_valid_token(token_expires_timestamp)):
         motlin_token, token_expires_timestamp = make_authorization(
-            motlin_client_id, motlin_client_secret)
+            moltin_client)
     return motlin_token
 
 
-def make_authorization(motlin_client_id: str,
-                       motlin_client_secret: str) -> Token:
+def make_authorization(moltin_client: MoltinClient) -> Token:
     """Return created access_token and expires of token"""
     data = {
-        'client_id': motlin_client_id,
-        'client_secret': motlin_client_secret,
+        'client_id': moltin_client.client_id,
+        'client_secret': moltin_client.client_secret,
         'grant_type': 'client_credentials',
     }
 
@@ -83,11 +86,9 @@ def make_authorization(motlin_client_id: str,
                  expires=authorization.get("expires"))
 
 
-def get_all_products(motlin_client_id: str,
-                     motlin_client_secret: str) -> [Product]:
+def get_all_products(moltin_client: MoltinClient) -> [Product]:
     """Return list if Product class with product's id and name"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -100,11 +101,9 @@ def get_all_products(motlin_client_id: str,
                     product.get("name")) for product in store]
 
 
-def get_product_by_id(product_id: str, motlin_client_id: str,
-                      motlin_client_secret: str) -> Product:
+def get_product_by_id(product_id: str, moltin_client: MoltinClient) -> Product:
     """Return product serialized dict from moltin"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -124,11 +123,9 @@ def get_product_by_id(product_id: str, motlin_client_id: str,
     )
 
 
-def get_product_image_by_id(product_file_id: str, motlin_client_id: str,
-                            motlin_client_secret: str) -> str:
+def get_product_image_by_id(product_file_id: str, moltin_client: MoltinClient) -> str:
     """Return href product's image from moltin"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
 
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
@@ -142,11 +139,9 @@ def get_product_image_by_id(product_file_id: str, motlin_client_id: str,
 
 
 def add_product_in_cart(product_id: str, amount: int, customer_id: int,
-                        motlin_client_id: str,
-                        motlin_client_secret: str) -> None:
+                        moltin_client: MoltinClient) -> None:
     """Add product with his amount in user cart"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
         'Content-Type': 'application/json',
@@ -168,11 +163,9 @@ def add_product_in_cart(product_id: str, amount: int, customer_id: int,
     response.raise_for_status()
 
 
-def get_cart_items(customer_id, motlin_client_id: str,
-                   motlin_client_secret: str) -> ([Product], str):
+def get_cart_items(customer_id, moltin_client: MoltinClient) -> ([Product], str):
     """Return list if Product class with products in cart and total price"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -197,11 +190,9 @@ def get_cart_items(customer_id, motlin_client_id: str,
 
 
 def remove_product_from_cart(product_id: str, customer_id: int,
-                             motlin_client_id: str,
-                             motlin_client_secret: str) -> None:
+                             moltin_client: MoltinClient) -> None:
     """Remove product from user cart"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -212,11 +203,9 @@ def remove_product_from_cart(product_id: str, customer_id: int,
     response.raise_for_status()
 
 
-def create_customer(name: str, email: str, motlin_client_id: str,
-                    motlin_client_secret: str) -> None:
+def create_customer(name: str, email: str, moltin_client: MoltinClient) -> None:
     """Create customer"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -233,11 +222,9 @@ def create_customer(name: str, email: str, motlin_client_id: str,
     response.raise_for_status()
 
 
-def get_customer_by_id(customer_id: str, motlin_client_id: str,
-                       motlin_client_secret: str) -> dict:
+def get_customer_by_id(customer_id: str, moltin_client: MoltinClient) -> dict:
     """Get serialize dict with customer by id from motlin"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -249,11 +236,9 @@ def get_customer_by_id(customer_id: str, motlin_client_id: str,
     return response.json()
 
 
-def add_product(product: Product, motlin_client_id: str,
-                motlin_client_secret: str) -> None:
+def add_product(product: Product, moltin_client: MoltinClient) -> None:
     """Upload product in Moltin"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -281,17 +266,13 @@ def add_product(product: Product, motlin_client_id: str,
                              headers=headers, json=json_data)
     response.raise_for_status()
     product_id = response.json().get('data').get('id')
-    uploaded_image_id = upload_image(product.image_url, motlin_client_id,
-                                     motlin_client_secret)
-    add_image_to_product(product_id, uploaded_image_id, motlin_client_id,
-                         motlin_client_secret)
+    uploaded_image_id = upload_image(product.image_url, moltin_client)
+    add_image_to_product(product_id, uploaded_image_id, moltin_client)
 
 
-def upload_image(image_url: str, motlin_client_id: str,
-                 motlin_client_secret: str) -> str:
+def upload_image(image_url: str, moltin_client: MoltinClient) -> str:
     """Upload image on Motlin and Return image.id"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -306,11 +287,9 @@ def upload_image(image_url: str, motlin_client_id: str,
     return image_id
 
 
-def add_image_to_product(product_id: str, image_id: str, motlin_client_id: str,
-                         motlin_client_secret: str) -> None:
+def add_image_to_product(product_id: str, image_id: str, moltin_client: MoltinClient) -> None:
     """Add uploaded image to Product"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -327,11 +306,9 @@ def add_image_to_product(product_id: str, image_id: str, motlin_client_id: str,
     response.raise_for_status()
 
 
-def create_flow(name: str, description: str, motlin_client_id: str,
-                motlin_client_secret: str) -> MoltinFlow:
+def create_flow(name: str, description: str, moltin_client: MoltinClient) -> MoltinFlow:
     """Create Flow and Return flow_id, flow_slug"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -357,11 +334,9 @@ def create_flow(name: str, description: str, motlin_client_id: str,
 
 def create_field_in_flow(flow_id: str, field_name: str, description: str,
                          field_type: str, required: bool,
-                         motlin_client_id: str,
-                         motlin_client_secret: str) -> str:
+                         moltin_client: MoltinClient) -> str:
     """Create field in flow and Return field_slug of this flow"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -397,11 +372,9 @@ def create_an_entry(flow_slug: str,
                     alias_field_slug: str, alias_value: str,
                     lat_field_slug: str, lat_value: str,
                     lon_field_slug: str, lon_value: str,
-                    motlin_client_id: str,
-                    motlin_client_secret: str) -> None:
+                    moltin_client: MoltinClient) -> None:
     """Create Pizza Address entry in fields in Flow-Address"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -424,11 +397,9 @@ def create_an_entry(flow_slug: str,
 
 
 def create_customer_address(user: int, lat: float, lon: float, flow_slug: str,
-                            motlin_client_id: str,
-                            motlin_client_secret: str) -> None:
+                            moltin_client: MoltinClient) -> None:
     """Create User-customer Address entry in fields in Flow-Customer"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -450,11 +421,9 @@ def create_customer_address(user: int, lat: float, lon: float, flow_slug: str,
     return response.json().get('data').get('id')
 
 
-def get_all_address_entries(slug: str, motlin_client_id: str,
-                            motlin_client_secret: str) -> List[PizzaAddress]:
+def get_all_address_entries(slug: str, moltin_client: MoltinClient) -> List[PizzaAddress]:
     """Return all Pizza Address"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
@@ -474,11 +443,9 @@ def get_all_address_entries(slug: str, motlin_client_id: str,
     ) for address in addresses]
 
 
-def get_address_by_id(slug: str, id: str, motlin_client_id: str,
-                      motlin_client_secret: str) -> PizzaAddress:
+def get_address_by_id(slug: str, id: str, moltin_client: MoltinClient) -> PizzaAddress:
     """Return PizzaAddress class by address_id"""
-    motlin_access_token = get_motlin_access_token(motlin_client_id,
-                                                  motlin_client_secret)
+    motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
     }
