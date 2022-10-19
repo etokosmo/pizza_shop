@@ -66,14 +66,14 @@ def create_buttons(choice: int = 0):
     return reply_markup
 
 
-def start(update: Update, context: CallbackContext):
+def start(update: Update, context: CallbackContext, payment_token):
     reply_markup = create_menu_buttons()
 
     update.message.reply_text('Please choose:', reply_markup=reply_markup)
     return "HANDLE_MENU"
 
 
-def handle_menu(update: Update, context: CallbackContext):
+def handle_menu(update: Update, context: CallbackContext, payment_token):
     query = update.callback_query
     if query.data == 'cart':
         products, total_price = get_cart_items(update.effective_user.id,
@@ -108,7 +108,7 @@ def handle_menu(update: Update, context: CallbackContext):
     return "HANDLE_DESCRIPTION"
 
 
-def handle_cart(update: Update, context: CallbackContext):
+def handle_cart(update: Update, context: CallbackContext, payment_token):
     query = update.callback_query
     if query.data == 'menu':
         reply_markup = create_menu_buttons()
@@ -143,7 +143,7 @@ def handle_cart(update: Update, context: CallbackContext):
         return "HANDLE_CART"
 
 
-def handle_description(update: Update, context: CallbackContext):
+def handle_description(update: Update, context: CallbackContext, payment_token):
     query = update.callback_query
     try:
         command, product_id = query.data.split(",")
@@ -191,7 +191,7 @@ def handle_description(update: Update, context: CallbackContext):
     return "HANDLE_MENU"
 
 
-def handle_waiting_email(update: Update, context: CallbackContext):
+def handle_waiting_email(update: Update, context: CallbackContext, payment_token):
     user = update.effective_user
     name = f"{user.first_name}_tgid-{user.id}"
     email = update.message.text
@@ -201,7 +201,7 @@ def handle_waiting_email(update: Update, context: CallbackContext):
         chat_id=update.message.chat_id)
 
 
-def handle_waiting_address(update: Update, context: CallbackContext):
+def handle_waiting_address(update: Update, context: CallbackContext, payment_token):
     query = update.callback_query
     if query:
         if query.data == 'menu':
@@ -276,7 +276,7 @@ def handle_waiting_address(update: Update, context: CallbackContext):
     return "HANDLE_WAITING_DELIVERY"
 
 
-def handle_delivery(update: Update, context: CallbackContext):
+def handle_delivery(update: Update, context: CallbackContext, payment_token):
     query = update.callback_query
     if query.data == 'menu':
         reply_markup = create_menu_buttons()
@@ -323,7 +323,7 @@ def handle_delivery(update: Update, context: CallbackContext):
         title = 'Оплатить'
         description = 'Оплатить заказ'
         payload = 'Payload'
-        provider_token = tg_merchant_token
+        provider_token = payment_token
         start_parameter = 'test-payment'
         currency = 'RUB'
         price = context.user_data['total_price']
@@ -362,7 +362,7 @@ def successful_payment_callback(update, context):
                                context=update.effective_user.id)
 
 
-def handle_users_reply(update: Update, context: CallbackContext, redis_db):
+def handle_users_reply(update: Update, context: CallbackContext, redis_db, payment_token):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -387,7 +387,7 @@ def handle_users_reply(update: Update, context: CallbackContext, redis_db):
     }
     state_handler = states_functions[user_state]
     try:
-        next_state = state_handler(update, context)
+        next_state = state_handler(update, context, payment_token)
         redis_db.set(str(chat_id), next_state)
     except Exception as err:
         logging.error(err)
@@ -427,8 +427,11 @@ if __name__ == '__main__':
 
     updater = Updater(telegram_api_token)
     dispatcher = updater.dispatcher
-    handle_users_reply_with_args = partial(handle_users_reply,
-                                           redis_db=redis_database)
+    handle_users_reply_with_args = partial(
+        handle_users_reply,
+        redis_db=redis_database,
+        payment_token=tg_merchant_token
+    )
     dispatcher.add_handler(
         CommandHandler('start', handle_users_reply_with_args))
 
