@@ -67,7 +67,7 @@ def create_buttons(choice: int = 0):
 
 
 def start(update: Update, context: CallbackContext, payment_token: str,
-          moltin_client: MoltinClient):
+          moltin_client: MoltinClient, ya_geo_api_token: str):
     reply_markup = create_menu_buttons(moltin_client)
 
     update.message.reply_text('Please choose:', reply_markup=reply_markup)
@@ -75,7 +75,7 @@ def start(update: Update, context: CallbackContext, payment_token: str,
 
 
 def handle_menu(update: Update, context: CallbackContext, payment_token: str,
-                moltin_client: MoltinClient):
+                moltin_client: MoltinClient, ya_geo_api_token: str):
     query = update.callback_query
     if query.data == 'cart':
         products, total_price = get_cart_items(update.effective_user.id,
@@ -108,7 +108,7 @@ def handle_menu(update: Update, context: CallbackContext, payment_token: str,
 
 
 def handle_cart(update: Update, context: CallbackContext, payment_token: str,
-                moltin_client: MoltinClient):
+                moltin_client: MoltinClient, ya_geo_api_token: str):
     query = update.callback_query
     if query.data == 'menu':
         reply_markup = create_menu_buttons(moltin_client)
@@ -143,7 +143,8 @@ def handle_cart(update: Update, context: CallbackContext, payment_token: str,
 
 
 def handle_description(update: Update, context: CallbackContext,
-                       payment_token: str, moltin_client: MoltinClient):
+                       payment_token: str, moltin_client: MoltinClient,
+                       ya_geo_api_token: str):
     query = update.callback_query
     try:
         command, product_id = query.data.split(",")
@@ -191,7 +192,8 @@ def handle_description(update: Update, context: CallbackContext,
 
 
 def handle_waiting_email(update: Update, context: CallbackContext,
-                         payment_token: str, moltin_client: MoltinClient):
+                         payment_token: str, moltin_client: MoltinClient,
+                         ya_geo_api_token: str):
     user = update.effective_user
     name = f"{user.first_name}_tgid-{user.id}"
     email = update.message.text
@@ -202,7 +204,8 @@ def handle_waiting_email(update: Update, context: CallbackContext,
 
 
 def handle_waiting_address(update: Update, context: CallbackContext,
-                           payment_token: str, moltin_client: MoltinClient):
+                           payment_token: str, moltin_client: MoltinClient,
+                           ya_geo_api_token: str):
     query = update.callback_query
     if query:
         if query.data == 'menu':
@@ -227,7 +230,7 @@ def handle_waiting_address(update: Update, context: CallbackContext,
     if message.location:
         current_pos = (message.location.latitude, message.location.longitude)
     else:
-        current_pos = fetch_coordinates(yandex_geo_api_token, message.text)
+        current_pos = fetch_coordinates(ya_geo_api_token, message.text)
         if not current_pos:
             reply_markup = create_buttons()
             context.bot.send_message(
@@ -277,7 +280,8 @@ def handle_waiting_address(update: Update, context: CallbackContext,
 
 
 def handle_delivery(update: Update, context: CallbackContext,
-                    payment_token: str, moltin_client: MoltinClient):
+                    payment_token: str, moltin_client: MoltinClient,
+                    ya_geo_api_token: str):
     query = update.callback_query
     if query.data == 'menu':
         reply_markup = create_menu_buttons(moltin_client)
@@ -363,7 +367,8 @@ def successful_payment_callback(update, context):
 
 def handle_users_reply(update: Update, context: CallbackContext,
                        redis_db: redis.client.Redis,
-                       payment_token: str, moltin_client: MoltinClient):
+                       payment_token: str, moltin_client: MoltinClient,
+                       ya_geo_api_token: str):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -389,7 +394,7 @@ def handle_users_reply(update: Update, context: CallbackContext,
     state_handler = states_functions[user_state]
     try:
         next_state = state_handler(update, context, payment_token,
-                                   moltin_client)
+                                   moltin_client, ya_geo_api_token)
         redis_db.set(str(chat_id), next_state)
     except Exception as err:
         logging.error(err)
@@ -435,7 +440,8 @@ if __name__ == '__main__':
         handle_users_reply,
         redis_db=redis_database,
         payment_token=tg_merchant_token,
-        moltin_client=moltin_client
+        moltin_client=moltin_client,
+        ya_geo_api_token=yandex_geo_api_token
     )
     dispatcher.add_handler(
         CommandHandler('start', handle_users_reply_with_args))
@@ -444,9 +450,12 @@ if __name__ == '__main__':
     dispatcher.add_handler(
         MessageHandler(Filters.text, handle_users_reply_with_args))
     dispatcher.add_error_handler(handle_error)
-
+    handle_waiting_address_with_args = partial(
+        handle_waiting_address,
+        ya_geo_api_token=yandex_geo_api_token
+    )
     location_handler = MessageHandler(Filters.location | Filters.text,
-                                      handle_waiting_address)
+                                      handle_waiting_address_with_args)
     dispatcher.add_handler(location_handler)
     dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
 
