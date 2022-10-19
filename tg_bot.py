@@ -90,7 +90,7 @@ def handle_menu(update: Update, context: CallbackContext):
                                 motlin_client_secret)
     keyboard = [
         [InlineKeyboardButton("Добавить в корзину",
-                              callback_data=f"1,{product.get('id')}"), ],
+                              callback_data=f"1,{product.id}"), ],
         [InlineKeyboardButton("Назад", callback_data="back")],
         [InlineKeyboardButton('Корзина', callback_data='cart')]
     ]
@@ -98,7 +98,7 @@ def handle_menu(update: Update, context: CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_photo(
         chat_id=query.message.chat_id,
-        photo=get_product_image_by_id(product.get('id'), motlin_client_id,
+        photo=get_product_image_by_id(product.image_url, motlin_client_id,
                                       motlin_client_secret),
         caption=create_product_description(product),
         reply_markup=reply_markup

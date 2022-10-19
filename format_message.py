@@ -13,9 +13,8 @@ def create_cart_message(products: [Product], total_price: str) -> str:
     return message
 
 
-def create_product_description(product: dict) -> str:
+def create_product_description(product: Product) -> str:
     """Create message with product description"""
-    message = f"{product.get('name')}\n{product.get('description')}\n\n" \
-              f"Цена: {product.get('price')[0].get('amount')} " \
-              f"{product.get('price')[0].get('currency')}"
+    message = f"{product.name}\n{product.description}\n\n" \
+              f"Цена: {product.price_amount} {product.price_currency}"
     return message

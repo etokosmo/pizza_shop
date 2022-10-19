@@ -101,7 +101,7 @@ def get_all_products(motlin_client_id: str,
 
 
 def get_product_by_id(product_id: str, motlin_client_id: str,
-                      motlin_client_secret: str) -> dict:
+                      motlin_client_secret: str) -> Product:
     """Return product serialized dict from moltin"""
     motlin_access_token = get_motlin_access_token(motlin_client_id,
                                                   motlin_client_secret)
@@ -112,19 +112,23 @@ def get_product_by_id(product_id: str, motlin_client_id: str,
     response = requests.get(f'https://api.moltin.com/v2/products/{product_id}',
                             headers=headers)
     response.raise_for_status()
-    return response.json().get("data")
+    product = response.json().get("data")
+    return Product(
+        product.get("id"),
+        product.get("name"),
+        product.get("slug"),
+        product.get("description"),
+        product.get("relationships").get("main_image").get("data").get("id"),
+        product.get('price')[0].get('amount'),
+        product.get('price')[0].get('currency')
+    )
 
 
-def get_product_image_by_id(product_id: str, motlin_client_id: str,
+def get_product_image_by_id(product_file_id: str, motlin_client_id: str,
                             motlin_client_secret: str) -> str:
     """Return href product's image from moltin"""
     motlin_access_token = get_motlin_access_token(motlin_client_id,
                                                   motlin_client_secret)
-    product_file_id = get_product_by_id(
-        product_id,
-        motlin_client_id,
-        motlin_client_secret
-    ).get("relationships").get("main_image").get("data").get("id")
 
     headers = {
         'Authorization': f'Bearer {motlin_access_token}',
