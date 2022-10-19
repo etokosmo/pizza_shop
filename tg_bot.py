@@ -1,5 +1,6 @@
 import logging
 from functools import partial
+from textwrap import dedent
 
 import redis
 from environs import Env
@@ -244,26 +245,34 @@ def handle_waiting_address(update: Update, context: CallbackContext,
                                                             current_pos)
 
     if dist_to_nearest_address <= 500:
-        message = f'Может заберете пиццу из нашей пиццерии неподалёку? ' \
-                  f'Она всего в {dist_to_nearest_address} метрах от вас! ' \
-                  f'Вот её адрес: {nearest_address.address}. ' \
-                  f'А можем и бесплатно доставить, нам не сложно :)'
+        message = f'''
+            Может заберете пиццу из нашей пиццерии неподалёку?
+            Она всего в {dist_to_nearest_address} метрах от вас!
+            Вот её адрес: {nearest_address.address}.
+            А можем и бесплатно доставить, нам не сложно :)
+            '''
         choice = 2
     elif dist_to_nearest_address <= 5000:
-        message = f'Похоже придется ехать до вас на самокате. ' \
-                  f'Доставка будет стоить 100 рублей. ' \
-                  f'Доставляем или самовывоз? '
+        message = f'''
+            Похоже придется ехать до вас на самокате.
+            Доставка будет стоить 100 рублей.
+            Доставляем или самовывоз?
+            '''
         choice = 2
     elif dist_to_nearest_address <= 20000:
-        message = f'Похоже придется ехать до вас на машине. ' \
-                  f'Доставка будет стоить 300 рублей. ' \
-                  f'Доставляем или самовывоз? '
+        message = f'''
+            Похоже придется ехать до вас на машине.
+            Доставка будет стоить 300 рублей.
+            Доставляем или самовывоз?
+            '''
         choice = 2
     else:
-        message = f'Простите, но так далеко мы пиццу не доставляем. ' \
-                  f'Может заберете пиццу из нашей пиццерии? ' \
-                  f'Ближайшая к вам всего в {dist_to_nearest_address} метрах от вас! ' \
-                  f'Вот её адрес: {nearest_address.address}. '
+        message = f'''
+            Простите, но так далеко мы пиццу не доставляем.
+            Может заберете пиццу из нашей пиццерии?
+            Ближайшая к вам всего в {dist_to_nearest_address} метрах от вас!
+            Вот её адрес: {nearest_address.address}.
+            '''
         choice = 1
 
     context.user_data['address'] = nearest_address.address
@@ -273,7 +282,7 @@ def handle_waiting_address(update: Update, context: CallbackContext,
     reply_markup = create_buttons(
         choice=choice)
     context.bot.send_message(
-        text=message,
+        text=dedent(message),
         reply_markup=reply_markup,
         chat_id=update.message.chat_id)
     return "HANDLE_WAITING_DELIVERY"
