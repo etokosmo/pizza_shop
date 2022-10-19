@@ -1,4 +1,5 @@
 import logging
+from functools import partial
 
 import redis
 from environs import Env
@@ -15,7 +16,6 @@ from moltin_tools import get_all_products, get_product_by_id, \
     remove_product_from_cart, create_customer, get_all_address_entries, \
     create_customer_address
 
-_database = None
 logger = logging.getLogger(__name__)
 
 
@@ -362,8 +362,7 @@ def successful_payment_callback(update, context):
                                context=update.effective_user.id)
 
 
-def handle_users_reply(update: Update, context: CallbackContext):
-    db = get_database_connection()
+def handle_users_reply(update: Update, context: CallbackContext, redis_db):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -375,7 +374,7 @@ def handle_users_reply(update: Update, context: CallbackContext):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = db.get(str(chat_id)).decode("utf-8")
+        user_state = redis_db.get(str(chat_id)).decode("utf-8")
 
     states_functions = {
         'START': start,
@@ -389,21 +388,9 @@ def handle_users_reply(update: Update, context: CallbackContext):
     state_handler = states_functions[user_state]
     try:
         next_state = state_handler(update, context)
-        db.set(str(chat_id), next_state)
+        redis_db.set(str(chat_id), next_state)
     except Exception as err:
         logging.error(err)
-
-
-def get_database_connection():
-    """
-    Возвращает конекшн с базой данных Redis,
-    либо создаёт новый, если он ещё не создан.
-    """
-    global _database
-    if _database is None:
-        _database = redis.Redis(host=database_host, port=database_port,
-                                password=database_password)
-    return _database
 
 
 def handle_error(update: Update, context: CallbackContext):
@@ -421,9 +408,11 @@ if __name__ == '__main__':
     env.read_env()
     telegram_api_token = env("TELEGRAM_API_TOKEN")
     telegram_chat_id = env("TELEGRAM_CHAT_ID")
-    database_password = env("DATABASE_PASSWORD")
-    database_host = env("DATABASE_HOST")
-    database_port = env("DATABASE_PORT")
+    redis_database = redis.Redis(
+        host=env("DATABASE_HOST"),
+        port=env("DATABASE_PORT"),
+        password=env("DATABASE_PASSWORD")
+    )
     motlin_client_id = env("MOTLIN_CLIENT_ID")
     motlin_client_secret = env("MOTLIN_CLIENT_SECRET")
     yandex_geo_api_token = env("YANDEX_GEO_API_TOKEN")
@@ -438,9 +427,14 @@ if __name__ == '__main__':
 
     updater = Updater(telegram_api_token)
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
-    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
-    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
+    handle_users_reply_with_args = partial(handle_users_reply,
+                                           redis_db=redis_database)
+    dispatcher.add_handler(
+        CommandHandler('start', handle_users_reply_with_args))
+
+    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply_with_args))
+    dispatcher.add_handler(
+        MessageHandler(Filters.text, handle_users_reply_with_args))
     dispatcher.add_error_handler(handle_error)
 
     location_handler = MessageHandler(Filters.location | Filters.text,
