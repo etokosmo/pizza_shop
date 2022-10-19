@@ -349,8 +349,9 @@ def create_flow(name: str, description: str, motlin_client_id: str,
     response = requests.post('https://api.moltin.com/v2/flows',
                              headers=headers, json=json_data)
     response.raise_for_status()
-    flow_id = response.json().get('data').get('id')
-    flow_slug = response.json().get('data').get('slug')
+    flow = response.json()
+    flow_id = flow.get('data').get('id')
+    flow_slug = flow.get('data').get('slug')
     return MoltinFlow(id=flow_id, slug=flow_slug)
 
 
