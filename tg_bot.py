@@ -405,7 +405,7 @@ def handle_error(update: Update, context: CallbackContext):
     logger.exception(context.error)
 
 
-if __name__ == '__main__':
+def main():
     logging.basicConfig(
         format='%(asctime)s : %(message)s',
         datefmt='%d/%m/%Y %H:%M:%S',
@@ -464,3 +464,7 @@ if __name__ == '__main__':
 
     updater.start_polling()
     updater.idle()
+
+
+if __name__ == '__main__':
+    main()
