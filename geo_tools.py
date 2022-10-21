@@ -1,6 +1,9 @@
+from functools import partial
+
 import requests
 from geopy import distance
-from functools import partial
+
+from moltin_tools import PizzaAddress
 
 
 def fetch_coordinates(apikey: str, address: str) -> (float, float):
@@ -28,7 +31,7 @@ def get_address_dist(pizza_address, user_address):
     return distance.distance(pizza_location, user_address).meters
 
 
-def get_min_dist(pizza_addresses, user_address):
+def get_min_dist(pizza_addresses, user_address) -> (PizzaAddress, int):
     get_address_dist_with_args = partial(get_address_dist,
                                          user_address=user_address)
     nearest_address = min(pizza_addresses, key=get_address_dist_with_args)

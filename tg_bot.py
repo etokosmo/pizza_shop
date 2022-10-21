@@ -240,7 +240,7 @@ def handle_waiting_address(update: Update, context: CallbackContext,
                 chat_id=update.message.chat_id)
             return "HANDLE_WAITING_ADDRESS"
 
-    addresses = get_all_address_entries('adres', moltin_client)
+    addresses = get_all_address_entries('adds', moltin_client)
     nearest_address, dist_to_nearest_address = get_min_dist(addresses,
                                                             current_pos)
 
@@ -248,7 +248,7 @@ def handle_waiting_address(update: Update, context: CallbackContext,
         message = f'''
             Может заберете пиццу из нашей пиццерии неподалёку?
             Она всего в {dist_to_nearest_address} метрах от вас!
-            Вот её адрес: {nearest_address.address}.
+            Вот её адрес: {nearest_address.adds}.
             А можем и бесплатно доставить, нам не сложно :)
             '''
         choice = 2
@@ -271,11 +271,11 @@ def handle_waiting_address(update: Update, context: CallbackContext,
             Простите, но так далеко мы пиццу не доставляем.
             Может заберете пиццу из нашей пиццерии?
             Ближайшая к вам всего в {dist_to_nearest_address} метрах от вас!
-            Вот её адрес: {nearest_address.address}.
+            Вот её адрес: {nearest_address.adds}.
             '''
         choice = 1
 
-    context.user_data['address'] = nearest_address.address
+    context.user_data['address'] = nearest_address.adds
     context.user_data['deliveryman_tg'] = nearest_address.deliveryman_tg
     context.user_data['user_lat'] = current_pos[0]
     context.user_data['user_lon'] = current_pos[1]

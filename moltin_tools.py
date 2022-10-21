@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import NamedTuple, List
 
 import requests
+from dacite import from_dict
 from slugify import slugify
 
 motlin_token, token_expires_timestamp = None, None
@@ -32,12 +33,12 @@ class Product:
     image_url: str = None
     price_amount: str = None
     price_currency: str = 'RUB'
-    amount: int = 0
+    quantity: int = 0
 
 
 @dataclass()
 class PizzaAddress:
-    address: str
+    adds: str
     alias: str
     lat: str
     lon: str
@@ -114,7 +115,8 @@ def get_product_by_id(product_id: str, moltin_client: MoltinClient) -> Product:
     )
 
 
-def get_product_image_by_id(product_file_id: str, moltin_client: MoltinClient) -> str:
+def get_product_image_by_id(product_file_id: str,
+                            moltin_client: MoltinClient) -> str:
     """Return href product's image from moltin"""
     motlin_access_token = get_motlin_access_token(moltin_client)
 
@@ -154,7 +156,8 @@ def add_product_in_cart(product_id: str, amount: int, customer_id: int,
     response.raise_for_status()
 
 
-def get_cart_items(customer_id, moltin_client: MoltinClient) -> ([Product], str):
+def get_cart_items(customer_id, moltin_client: MoltinClient) -> (
+        [Product], str):
     """Return list if Product class with products in cart and total price"""
     motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
@@ -194,7 +197,8 @@ def remove_product_from_cart(product_id: str, customer_id: int,
     response.raise_for_status()
 
 
-def create_customer(name: str, email: str, moltin_client: MoltinClient) -> None:
+def create_customer(name: str, email: str,
+                    moltin_client: MoltinClient) -> None:
     """Create customer"""
     motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
@@ -278,7 +282,8 @@ def upload_image(image_url: str, moltin_client: MoltinClient) -> str:
     return image_id
 
 
-def add_image_to_product(product_id: str, image_id: str, moltin_client: MoltinClient) -> None:
+def add_image_to_product(product_id: str, image_id: str,
+                         moltin_client: MoltinClient) -> None:
     """Add uploaded image to Product"""
     motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
@@ -297,7 +302,8 @@ def add_image_to_product(product_id: str, image_id: str, moltin_client: MoltinCl
     response.raise_for_status()
 
 
-def create_flow(name: str, description: str, moltin_client: MoltinClient) -> MoltinFlow:
+def create_flow(name: str, description: str,
+                moltin_client: MoltinClient) -> MoltinFlow:
     """Create Flow and Return flow_id, flow_slug"""
     motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
@@ -412,7 +418,8 @@ def create_customer_address(user: int, lat: float, lon: float, flow_slug: str,
     return response.json().get('data').get('id')
 
 
-def get_all_address_entries(slug: str, moltin_client: MoltinClient) -> List[PizzaAddress]:
+def get_all_address_entries(slug: str, moltin_client: MoltinClient) -> List[
+    PizzaAddress]:
     """Return all Pizza Address"""
     motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
@@ -424,17 +431,12 @@ def get_all_address_entries(slug: str, moltin_client: MoltinClient) -> List[Pizz
     response.raise_for_status()
 
     addresses = response.json().get('data')
-    return [PizzaAddress(
-        address=address.get('adres'),
-        alias=address.get('alias'),
-        lat=address.get('shirota'),
-        lon=address.get('dolgota'),
-        deliveryman_tg=address.get('deliveryman_tg'),
-        id=address.get('id')
-    ) for address in addresses]
+    return [from_dict(data_class=PizzaAddress, data=address) for address in
+            addresses]
 
 
-def get_address_by_id(slug: str, id: str, moltin_client: MoltinClient) -> PizzaAddress:
+def get_address_by_id(slug: str, address_id: str,
+                      moltin_client: MoltinClient) -> PizzaAddress:
     """Return PizzaAddress class by address_id"""
     motlin_access_token = get_motlin_access_token(moltin_client)
     headers = {
@@ -442,15 +444,9 @@ def get_address_by_id(slug: str, id: str, moltin_client: MoltinClient) -> PizzaA
     }
 
     response = requests.get(
-        f'https://api.moltin.com/v2/flows/{slug}/entries/{id}',
+        f'https://api.moltin.com/v2/flows/{slug}/entries/{address_id}',
         headers=headers)
     response.raise_for_status()
 
     address = response.json().get('data')
-    return PizzaAddress(
-        address=address.get('adres'),
-        alias=address.get('alias'),
-        lat=address.get('shirota'),
-        lon=address.get('dolgota'),
-        deliveryman_tg=address.get('deliveryman_tg'),
-        id=address.get('id'))
+    return from_dict(data_class=PizzaAddress, data=address)
