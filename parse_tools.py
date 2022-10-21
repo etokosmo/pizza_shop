@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass()
 class FlowFields:
-    adds_field: str
+    address_field: str
     alias_field: str
     lat_field: str
     lon_field: str
@@ -56,7 +56,7 @@ def parse_addresses(path_to_addresses: str, flow_fields: FlowFields,
     addresses = json.loads(addresses_json)
     for address in addresses:
         pizza_address = PizzaAddress(
-            adds=address.get("address").get("full"),
+            address=address.get("address").get("full"),
             alias=address.get("alias"),
             lat=address.get("coordinates").get("lat"),
             lon=address.get("coordinates").get("lon"),
@@ -64,17 +64,17 @@ def parse_addresses(path_to_addresses: str, flow_fields: FlowFields,
         try:
             create_an_entry(
                 flow_slug,
-                flow_fields.adds_field, pizza_address.adds,
+                flow_fields.address_field, pizza_address.address,
                 flow_fields.alias_field, pizza_address.alias,
                 flow_fields.lat_field, pizza_address.lat,
                 flow_fields.lon_field, pizza_address.lon,
                 moltin_client)
         except HTTPError as error:
             logger.info(
-                f"Address: {pizza_address.adds}. An error occurred while loading address\n{error}")
+                f"Address: {pizza_address.address}. An error occurred while loading address\n{error}")
         else:
             logger.info(
-                f"Address: {pizza_address.adds} uploaded successfully")
+                f"Address: {pizza_address.address} uploaded successfully")
 
 
 def main():
@@ -94,15 +94,14 @@ def main():
 
     path_to_menu = BASE_DIR / menu_filename
     path_to_addresses = BASE_DIR / addresses_filename
-    flow_name = 'adds'
+    flow_name = 'Pizza Address'
     flow_description = 'Адрес пиццерии'
 
-    # parse_menu(path_to_menu, moltin_client)
+    parse_menu(path_to_menu, moltin_client)
 
     flow_id, flow_slug = create_flow(flow_name, flow_description,
                                      moltin_client)
-    adds_field = create_field_in_flow(flow_id, flow_name,
-                                      flow_description,
+    address_field = create_field_in_flow(flow_id, 'address', flow_description,
                                       'string', True, moltin_client)
     alias_field = create_field_in_flow(flow_id, 'alias', 'Алиас пиццерии',
                                        'string', True, moltin_client)
@@ -112,7 +111,7 @@ def main():
                                      'string', True, moltin_client)
 
     flow_fields = FlowFields(
-        adds_field=adds_field,
+        address_field=address_field,
         alias_field=alias_field,
         lat_field=lat_field,
         lon_field=lon_field

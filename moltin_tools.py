@@ -38,7 +38,7 @@ class Product:
 
 @dataclass()
 class PizzaAddress:
-    adds: str
+    address: str
     alias: str
     lat: str
     lon: str
