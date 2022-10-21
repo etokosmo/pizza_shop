@@ -208,8 +208,8 @@ def create_customer(name: str, email: str,
     json_data = {
         'data': {
             'type': 'customer',
-            'name': f'{name}',
-            'email': f'{email}',
+            'name': name,
+            'email': email,
         },
     }
     response = requests.post('https://api.moltin.com/v2/customers',
