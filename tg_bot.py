@@ -50,21 +50,11 @@ def create_card_buttons(products):
     return reply_markup
 
 
-def create_buttons(choice: int = 0):
+def create_address_keyboard():
     keyboard = [[InlineKeyboardButton('В меню', callback_data='menu'),
                  InlineKeyboardButton('Ввести адрес',
                                       callback_data='address')]]
-    if choice == 2:
-        keyboard.append(
-            [InlineKeyboardButton('Доставка', callback_data='delivery'),
-             InlineKeyboardButton('Самовывоз', callback_data='pickup')]
-        )
-    elif choice == 1:
-        keyboard.append(
-            [InlineKeyboardButton('Доставка', callback_data='delivery')]
-        )
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    return reply_markup
+    return keyboard
 
 
 def start(update: Update, context: CallbackContext, payment_token: str,
@@ -233,7 +223,8 @@ def handle_waiting_address(update: Update, context: CallbackContext,
     else:
         current_pos = fetch_coordinates(ya_geo_api_token, message.text)
         if not current_pos:
-            reply_markup = create_buttons()
+            keyboard = create_address_keyboard()
+            reply_markup = InlineKeyboardMarkup(keyboard)
             context.bot.send_message(
                 text=f'Не смогли разобрать ваш адрес, введите еще раз',
                 reply_markup=reply_markup,
@@ -251,21 +242,33 @@ def handle_waiting_address(update: Update, context: CallbackContext,
             Вот её адрес: {nearest_address.adds}.
             А можем и бесплатно доставить, нам не сложно :)
             '''
-        choice = 2
+        keyboard = create_address_keyboard()
+        keyboard.append(
+            [InlineKeyboardButton('Доставка', callback_data='delivery'),
+             InlineKeyboardButton('Самовывоз', callback_data='pickup')]
+        )
     elif dist_to_nearest_address <= 5000:
         message = f'''
             Похоже придется ехать до вас на самокате.
             Доставка будет стоить 100 рублей.
             Доставляем или самовывоз?
             '''
-        choice = 2
+        keyboard = create_address_keyboard()
+        keyboard.append(
+            [InlineKeyboardButton('Доставка', callback_data='delivery'),
+             InlineKeyboardButton('Самовывоз', callback_data='pickup')]
+        )
     elif dist_to_nearest_address <= 20000:
         message = f'''
             Похоже придется ехать до вас на машине.
             Доставка будет стоить 300 рублей.
             Доставляем или самовывоз?
             '''
-        choice = 2
+        keyboard = create_address_keyboard()
+        keyboard.append(
+            [InlineKeyboardButton('Доставка', callback_data='delivery'),
+             InlineKeyboardButton('Самовывоз', callback_data='pickup')]
+        )
     else:
         message = f'''
             Простите, но так далеко мы пиццу не доставляем.
@@ -273,14 +276,16 @@ def handle_waiting_address(update: Update, context: CallbackContext,
             Ближайшая к вам всего в {dist_to_nearest_address} метрах от вас!
             Вот её адрес: {nearest_address.adds}.
             '''
-        choice = 1
+        keyboard = create_address_keyboard()
+        keyboard.append(
+            [InlineKeyboardButton('Доставка', callback_data='delivery')]
+        )
 
     context.user_data['address'] = nearest_address.adds
     context.user_data['deliveryman_tg'] = nearest_address.deliveryman_tg
     context.user_data['user_lat'] = current_pos[0]
     context.user_data['user_lon'] = current_pos[1]
-    reply_markup = create_buttons(
-        choice=choice)
+    reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(
         text=dedent(message),
         reply_markup=reply_markup,
